@@ -3,25 +3,23 @@ package com.github.jt.project1;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-
-import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
 import org.apache.catalina.LifecycleException;
-import org.apache.catalina.WebResourceRoot;
-import org.apache.catalina.webresources.DirResourceSet;
-import org.apache.catalina.webresources.StandardRoot;
 import org.apache.tomcat.util.descriptor.web.ContextResource;
 
 public class SimpleServer {
   private static final Logger logger = LogManager.getLogger(SimpleServer.class);
-    
+
   public static void main(String[] args) {
     // get db credentials from classpath
-    try (InputStream input = SimpleServer.class.getClassLoader().getResourceAsStream("app.properties")) {
+    try (InputStream input =
+        SimpleServer.class.getClassLoader().getResourceAsStream("app.properties")) {
       Properties prop = new Properties(System.getProperties());
       prop.load(input);
       System.setProperties(prop);
@@ -29,22 +27,25 @@ public class SimpleServer {
       logger.error("Properties file error ", ex);
     }
 
-    // create db service
-    //NoteSQL db = new NoteSQL(NoteDataSource.getInstance());
-  /*}
+    // String[] categories = {"Primary Type", "Location Description", "Arrest", "Domestic"};
+    // SimpleAnalysis analyze = new SimpleAnalysis(args[0]);
+    // LinkedHashMap<List<String>, Long> pairedCount = analyze.get2Count("Domestic", "Arrest");
+    // pairedCount.forEach((k, v) -> System.out.println(k + ": " + v));
 
-  public void init() {*/
+    // public void init() {//
     Tomcat tomcat = new Tomcat();
+    tomcat.enableNaming();
     tomcat.setPort(8888);
     tomcat.getConnector();
-    tomcat.enableNaming();
+
+    String baseDirLocation = "target/tomcat/";
+    tomcat.setBaseDir(new File(baseDirLocation).getAbsolutePath());
 
     String webappDirLocation = "src/main/webapp/";
-    StandardContext ctx = (StandardContext) tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
-    System.out.println("configuring app with basedir: " + new File("./" + webappDirLocation).getAbsolutePath());
+    tomcat.addWebapp("", new File(webappDirLocation).getAbsolutePath());
 
-    // STUFF TO GET JNDI RUNNING BUT IT'S NOT WORKING
-    /*ContextResource dataResource = new ContextResource();
+    // JNDI working!!
+    ContextResource dataResource = new ContextResource();
     dataResource.setProperty("factory", "org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory");
     dataResource.setName(System.getProperty("db.name"));
     dataResource.setType(System.getProperty("db.type"));
@@ -55,20 +56,23 @@ public class SimpleServer {
     dataResource.setProperty("password", System.getProperty("db.password"));
     tomcat.getServer().getGlobalNamingResources().addResource(dataResource);
 
-    // Declare an alternative location for your "WEB-INF/classes" dir
-    // Servlet 3.0 annotation will work
-    File additionWebInfClasses = new File("target/dependency");
-    WebResourceRoot resources = new StandardRoot(ctx);
-    resources.addPreResources(
-        new DirResourceSet(resources, "/WEB-INF/classes", additionWebInfClasses.getAbsolutePath(), "/"));
-
-    ctx.setResources(resources);*/
-
     try {
       tomcat.start();
       tomcat.getServer().await();
     } catch (LifecycleException e) {
       e.printStackTrace();
     }
+
+    Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
+      public void run() {
+        try {
+          tomcat.stop();
+        } catch (LifecycleException e) {
+          e.printStackTrace();
+        }
+      }
+    });
   }
 }
+

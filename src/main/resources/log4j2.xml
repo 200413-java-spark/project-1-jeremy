@@ -12,7 +12,7 @@
   </Appenders>
   <Loggers>
     <Root level="ERROR">
-      <AppenderRef ref="FILE" />
+      <AppenderRef ref="File" />
     </Root>
   </Loggers>
 </Configuration>
