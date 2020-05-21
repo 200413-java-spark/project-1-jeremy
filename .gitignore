@@ -6,6 +6,7 @@ Crimes2015.csv
 psql.sh
 app.properties
 rds.properties
+src/main/simpleapp/
 
 # my stuff
 .metals/
