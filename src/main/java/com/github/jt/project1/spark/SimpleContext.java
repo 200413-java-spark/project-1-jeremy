@@ -8,9 +8,6 @@ public class SimpleContext {
   private static SimpleContext instance;
 
   private SimpleContext() {
-  }
-
-  private void confContext() {
     if (sc == null) {
       SparkConf conf = new SparkConf().setAppName("Simple Spark App").setMaster("local[*]");
       sc = new JavaSparkContext(conf);
@@ -21,7 +18,6 @@ public class SimpleContext {
   public static SimpleContext getInstance() {
     if (instance == null) {
       instance = new SimpleContext();
-      instance.confContext();
     }
     return instance;
   }

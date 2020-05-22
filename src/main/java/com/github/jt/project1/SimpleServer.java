@@ -3,8 +3,6 @@ package com.github.jt.project1;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Properties;
 
 import org.apache.logging.log4j.Logger;
@@ -27,12 +25,6 @@ public class SimpleServer {
       logger.error("Properties file error ", ex);
     }
 
-    // String[] categories = {"Primary Type", "Location Description", "Arrest", "Domestic"};
-    // SimpleAnalysis analyze = new SimpleAnalysis(args[0]);
-    // LinkedHashMap<List<String>, Long> pairedCount = analyze.get2Count("Domestic", "Arrest");
-    // pairedCount.forEach((k, v) -> System.out.println(k + ": " + v));
-
-    // public void init() {//
     Tomcat tomcat = new Tomcat();
     tomcat.enableNaming();
     tomcat.setPort(8888);

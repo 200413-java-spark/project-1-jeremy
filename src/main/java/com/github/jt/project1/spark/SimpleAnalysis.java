@@ -1,7 +1,5 @@
 package com.github.jt.project1.spark;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -31,39 +29,38 @@ public class SimpleAnalysis {
 
   public SimpleAnalysis(String csvfile) {
     try {
-    sc = SimpleContext.getInstance().getContext();
-    JavaRDD<String> lines = sc.textFile(csvfile);
+      sc = SimpleContext.getInstance().getContext();
+      JavaRDD<String> lines = sc.textFile(csvfile);
 
-    // split csv into entries
-    JavaRDD<List<String>> items =
-        lines.map(x -> Arrays.stream(x.split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1))
-            .map(String::trim).collect(Collectors.toList()));
+      // split csv into entries
+      JavaRDD<List<String>> items =
+          lines.map(x -> Arrays.stream(x.split(",(?=([^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)", -1))
+              .map(String::trim).collect(Collectors.toList()));
 
-    // extract header
-    List<String> header = items.first();
-    stringified = header.stream().collect(Collectors.joining(", "));
-    
+      // extract header
+      List<String> header = items.first();
+      stringified = header.stream().collect(Collectors.joining(", "));
 
-    // remove header from data
-    JavaRDD<List<String>> data = items.filter(x -> !x.get(0).equals(header.get(0)));
 
-    // map each column to corrensponding row entry
-    maps = data.map(line -> {
-      LinkedHashMap<String, String> newMap = new LinkedHashMap<>();
-      for (int i = 0; i < line.size(); i++) {
-        newMap.put(header.get(i), line.get(i));
-      }
-      return newMap;
-    });
-    dimensions[0] = (long) header.size();
-    dimensions[1] = maps.count();
-  } catch (Exception e) {
-    logger.error("ERRORS", e);
+      // remove header from data
+      JavaRDD<List<String>> data = items.filter(x -> !x.get(0).equals(header.get(0)));
+
+      // map each column to corrensponding row entry
+      maps = data.map(line -> {
+        LinkedHashMap<String, String> newMap = new LinkedHashMap<>();
+        for (int i = 0; i < line.size(); i++) {
+          newMap.put(header.get(i), line.get(i));
+        }
+        return newMap;
+      });
+      dimensions[0] = (long) header.size();
+      dimensions[1] = maps.count();
+    } catch (Exception e) {
+      logger.error("ERRORS", e);
+    }
   }
-}
 
   public String getHeader() {
-    //String stringified = header.stream().collect(Collectors.joining(" "));
     return stringified;
   }
 
@@ -103,27 +100,17 @@ public class SimpleAnalysis {
     LinkedHashMap<String, Long> sortedCounts = sortMapByValue(countsByCat);
     counts.put(category, sortedCounts);
     return sortedCounts;
-
-    // System.out.println("\n" + category + "!");
-    // sortedCounts.forEach((k, v) -> System.out.println(k + ": " + v));
   }
 
   public LinkedHashMap<List<String>, Long> get2Count(String category1, String category2) {
-    JavaPairRDD<List<String>, Map<String, String>> crimesBy2Cat =
-        pairBy2(maps, category1, category2);
-    Map<List<String>, Long> countsBy2Cat = crimesBy2Cat.countByKey();
-    LinkedHashMap<List<String>, Long> sorted2Counts = sort2MapByValue(countsBy2Cat);
+    // sort category names before putting them into map as a pair
     List<String> categories = Arrays.asList(category1, category2);
     categories.sort(String::compareTo);
+    JavaPairRDD<List<String>, Map<String, String>> crimesBy2Cat =
+        pairBy2(maps, categories.get(0), categories.get(1));
+    Map<List<String>, Long> countsBy2Cat = crimesBy2Cat.countByKey();
+    LinkedHashMap<List<String>, Long> sorted2Counts = sort2MapByValue(countsBy2Cat);
     pairedCounts.put(categories, sorted2Counts);
-
-    // System.out.println("\n" + category1 + " x " + category2 + "!");
-    sorted2Counts.forEach((k, v) -> System.out.println(k + ": " + v));
     return sorted2Counts;
   }
-
-  /*
-   * public void writeToDb() { // write to db SimpleDb db = new SimpleDb(counts); try {
-   * db.writeAllToDB(); } catch (SQLException e) { e.printStackTrace(); } }
-   */
 }

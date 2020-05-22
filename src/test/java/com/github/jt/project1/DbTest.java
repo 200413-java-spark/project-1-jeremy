@@ -15,7 +15,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
 import java.util.Arrays;
-
+import java.util.List;
 import org.apache.catalina.webresources.DirResourceSet;
 import java.util.Properties;
 import org.apache.tomcat.util.descriptor.web.ContextResource;
@@ -38,6 +38,7 @@ public class DbTest {
 
   private static final Logger logger = LogManager.getLogger(DbTest.class);
   private Connection conn;
+  List<String> categoryNames = Arrays.asList("Arrest", "Primary Type");
 
   @Before
   @Test
@@ -53,7 +54,7 @@ public class DbTest {
 
       conn = DriverManager.getConnection(url, user, password);
       assertNotNull(conn);
-    } catch (SQLException | IOException  e) {
+    } catch (SQLException | IOException e) {
       logger.error("Some error", e);
     }
   }
@@ -69,67 +70,55 @@ public class DbTest {
     }
   }
 
-  /*@Test
-  public void tomcatShouldInitiate() {
-    TomcatJNDI tomcatJNDI = new TomcatJNDI();
-    tomcatJNDI.start();
-    try {
-      /*
-       * tomcatJNDI.processContextXml(new File("context.xml")); tomcatJNDI.processWebXml(new
-       * File("web.xml"));
-       //
-      DataSource ds = InitialContext.doLookup("java:comp/env/jdbc/ds");
-      System.out.println(System.getenv());
-      assertNotNull(ds);
-    } catch (NamingException e) {
-      logger.error("ERRORS", e);
-    }
-    tomcatJNDI.tearDown();
-  }*/
+  @Test
+  public void shouldConvertSpaces() {
+    categoryNames.forEach(s -> s.replace(" ", "_"));
+    String newName = categoryNames.stream().map(s -> s.replace(" ","_")).collect(Collectors.joining("_"));
+    //String tableName = categoryNames.get(0) + "_" + categoryNames.get(1);
+    System.out.println(newName);
+    assertEquals(newName, "Arrest_Primary_Type");
+  }
 
-  /*@Test
-    public void tomcatShouldSetUpJNDI() {
-    Tomcat tomcat = new Tomcat();
-    tomcat.setPort(8888);
-    tomcat.getConnector();
-    tomcat.enableNaming();
+  /*
+   * @Test public void tomcatShouldInitiate() { TomcatJNDI tomcatJNDI = new TomcatJNDI();
+   * tomcatJNDI.start(); try { /* tomcatJNDI.processContextXml(new File("context.xml"));
+   * tomcatJNDI.processWebXml(new File("web.xml")); // DataSource ds =
+   * InitialContext.doLookup("java:comp/env/jdbc/ds"); System.out.println(System.getenv());
+   * assertNotNull(ds); } catch (NamingException e) { logger.error("ERRORS", e); }
+   * tomcatJNDI.tearDown(); }
+   */
 
-    String webappDirLocation = "src/test/webapp/";
-    StandardContext ctx =
-        (StandardContext) tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
-    logger.log(Level.valueOf("DEBUG"),
-        "configuring app with basedir: " + new File("./" + webappDirLocation).getAbsolutePath());
-
-    ContextResource dataResource = new ContextResource();
-    dataResource.setProperty("factory", "org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory");
-    dataResource.setName(System.getProperty("db.name"));
-    dataResource.setType(System.getProperty("db.type"));
-    dataResource.setAuth("Container");
-    // dataResource.setProperty("driverClassName", System.getProperty("db.driver"));
-    dataResource.setProperty("url", System.getProperty("db.url"));
-    dataResource.setProperty("username", System.getProperty("db.user"));
-    dataResource.setProperty("password", System.getProperty("db.password"));
-    tomcat.getServer().getGlobalNamingResources().addResource(dataResource);
-
-    // Declare an alternative location for your "WEB-INF/classes" dir
-    // Servlet 3.0 annotation will work
-    File additionWebInfClasses = new File("target/dependency");
-    WebResourceRoot resources = new StandardRoot(ctx);
-    resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes",
-        additionWebInfClasses.getAbsolutePath(), "/"));
-
-    ctx.setResources(resources);
-
-    try {
-      tomcat.start();
-      // tomcat.getServer().await();
-      DataSource ds = InitialContext.doLookup("java:comp/env/jdbc/ds");
-      tomcat.stop();
-    } catch (Exception e) {
-      e.printStackTrace();
-      logger.error(Arrays.asList(e.getStackTrace()).stream().map(Object::toString)
-          .collect(Collectors.joining(", ")));
-    }
-  }*/
+  /*
+   * @Test public void tomcatShouldSetUpJNDI() { Tomcat tomcat = new Tomcat(); tomcat.setPort(8888);
+   * tomcat.getConnector(); tomcat.enableNaming();
+   * 
+   * String webappDirLocation = "src/test/webapp/"; StandardContext ctx = (StandardContext)
+   * tomcat.addWebapp("/", new File(webappDirLocation).getAbsolutePath());
+   * logger.log(Level.valueOf("DEBUG"), "configuring app with basedir: " + new File("./" +
+   * webappDirLocation).getAbsolutePath());
+   * 
+   * ContextResource dataResource = new ContextResource(); dataResource.setProperty("factory",
+   * "org.apache.tomcat.dbcp.dbcp2.BasicDataSourceFactory");
+   * dataResource.setName(System.getProperty("db.name"));
+   * dataResource.setType(System.getProperty("db.type")); dataResource.setAuth("Container"); //
+   * dataResource.setProperty("driverClassName", System.getProperty("db.driver"));
+   * dataResource.setProperty("url", System.getProperty("db.url"));
+   * dataResource.setProperty("username", System.getProperty("db.user"));
+   * dataResource.setProperty("password", System.getProperty("db.password"));
+   * tomcat.getServer().getGlobalNamingResources().addResource(dataResource);
+   * 
+   * // Declare an alternative location for your "WEB-INF/classes" dir // Servlet 3.0 annotation
+   * will work File additionWebInfClasses = new File("target/dependency"); WebResourceRoot resources
+   * = new StandardRoot(ctx); resources.addPreResources(new DirResourceSet(resources,
+   * "/WEB-INF/classes", additionWebInfClasses.getAbsolutePath(), "/"));
+   * 
+   * ctx.setResources(resources);
+   * 
+   * try { tomcat.start(); // tomcat.getServer().await(); DataSource ds =
+   * InitialContext.doLookup("java:comp/env/jdbc/ds"); tomcat.stop(); } catch (Exception e) {
+   * e.printStackTrace();
+   * logger.error(Arrays.asList(e.getStackTrace()).stream().map(Object::toString)
+   * .collect(Collectors.joining(", "))); } }
+   */
 
 }

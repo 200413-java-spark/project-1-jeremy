@@ -5,12 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.SQLException;
 import java.util.Map;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.sql.DataSource;
 
 public class SimpleDb {
   private DataSource ds;
@@ -41,9 +40,8 @@ public class SimpleDb {
 
   // assuming only 2 categories compared
   public void createPairedTable(List<String> categoryNames) {
-    categoryNames.forEach(s -> s.replace(" ", "_"));
-    categoryNames.sort(String::compareTo);
-    String tableName = categoryNames.get(0) + "_" + categoryNames.get(1);
+    String tableName =
+        categoryNames.stream().map(s -> s.replace(" ", "_")).collect(Collectors.joining("_"));
     String dropSql = "DROP TABLE IF EXISTS " + tableName;
     String createSql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" + tableName
         + "_category VARCHAR, " + tableName + "_count BIGINT)";
@@ -57,7 +55,9 @@ public class SimpleDb {
     }
   }
 
-  public void writeCountToTable(String categoryName, LinkedHashMap<String, Long> categoryCounts) {
+  public Integer writeCountToTable(String categoryName,
+      LinkedHashMap<String, Long> categoryCounts) {
+    Integer total = 0;
     String category = categoryName.replace(" ", "_");
     String prepareSql = "INSERT INTO " + category + " (" + category + "_category, " + category
         + "_count) VALUES (?,?)";
@@ -80,28 +80,28 @@ public class SimpleDb {
       });
       int n[] = ps.executeBatch();
       conn.commit();
-      Integer total = Arrays.stream(n).sum();
+      total = Arrays.stream(n).sum();
       System.out.println(total + " records inserted into db @ " + System.getProperty("db.url"));
     } catch (SQLException e) {
       e.printStackTrace();
     }
+    return total;
   }
 
-  public void writePairedCountToTable(List<String> categoryNames,
+  public Integer writePairedCountToTable(List<String> categoryNames,
       LinkedHashMap<List<String>, Long> categoryPairedCounts) {
-    categoryNames.forEach(s -> s.replace(" ", "_"));
-    categoryNames.sort(String::compareTo);
-    String tableName = categoryNames.get(0) + "_" + categoryNames.get(1);
-    String prepareSql = "INSERT INTO " + tableName + " (" + tableName + "_tableName, " + tableName
+    Integer total = 0;
+    String tableName =
+        categoryNames.stream().map(s -> s.replace(" ", "_")).collect(Collectors.joining("_"));
+    String prepareSql = "INSERT INTO " + tableName + " (" + tableName + "_category, " + tableName
         + "_COUNT) VALUES (?,?)";
     try (Connection conn = ds.getConnection();
         PreparedStatement ps = conn.prepareStatement(prepareSql);) {
       conn.setAutoCommit(false);
 
       categoryPairedCounts.forEach((key, value) -> {
-        key.forEach(s -> s.replace(" ", "_"));
-        key.sort(String::compareTo);
-        String catType = key.get(0) + "_" + categoryNames.get(1);
+        String catType =
+            key.stream().map(s -> s.replace(" ", "_")).collect(Collectors.joining("_"));
         Long catCount = value;
 
         // WHY DO I NEED THIS?
@@ -115,21 +115,27 @@ public class SimpleDb {
       });
       int n[] = ps.executeBatch();
       conn.commit();
-      Integer total = Arrays.stream(n).sum();
+      total = Arrays.stream(n).sum();
       System.out.println(total + " records inserted into db @ " + System.getProperty("db.url"));
     } catch (SQLException e) {
       e.printStackTrace();
     }
+    return total;
   }
 
-  public void writeAllToDB() throws SQLException {
-    counts.forEach((k, v) -> {
-      createTable(k);
-      writeCountToTable(k, v);
-    });
-    pairedCounts.forEach((k, v) -> {
-      createPairedTable(k);
-      writePairedCountToTable(k, v);
-    });
+  public Integer writeToDB() throws SQLException {
+    int[] total = {0};
+    if (!counts.isEmpty())
+      counts.forEach((k, v) -> {
+        createTable(k);
+        total[0] += writeCountToTable(k, v).intValue();
+      });
+    if (!pairedCounts.isEmpty())
+      pairedCounts.forEach((k, v) -> {
+        createPairedTable(k);
+        total[0] += writePairedCountToTable(k, v).intValue();
+      });
+    return total[0];
   }
 }
+
